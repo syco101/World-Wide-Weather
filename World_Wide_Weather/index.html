@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>World Wide Weather</title>
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body
+  class="
+    bg-gradient-to-br from-blue-200 to-blue-600
+    min-h-screen flex flex-col items-center justify-center
+    p-6
+  "
+>
+
+  <!-- Titel -->
+  <h1
+    class="
+      text-6xl md:text-7xl font-extrabold
+      text-white text-center mb-12
+    "
+  >
+    Weather 🌤️
+  </h1>
+
+  <!-- Suchleiste -->
+  <div class="flex justify-center mb-12 w-full max-w-2xl">
+    <input
+      id="cityInput"
+      type="text"
+      placeholder="Stadt eingeben..."
+      class="
+        flex-1 w-96 md:w-[500px]
+        px-6 py-4 text-lg
+        rounded-l-2xl shadow-lg
+        border-none focus:outline-none focus:shadow-outline
+        transition
+      "
+    />
+    <button
+      id="searchBtn"
+      class="
+        px-8 py-4 text-lg font-medium
+        bg-blue-700 text-white
+        rounded-r-2xl hover:bg-blue-800
+        active:scale-95 transition
+      "
+    >
+      Suchen
+    </button>
+  </div>
+
+  <!-- Wetterkarte -->
+  <div
+    id="weatherCard"
+    class="
+      max-w-md w-full bg-white p-6 rounded-lg shadow-md text-center hidden
+    "
+  >
+    <h2 id="location" class="text-2xl font-bold mb-2"></h2>
+    <img id="icon" class="mx-auto mb-2" />
+    <p id="temp" class="text-xl mb-1"></p>
+    <p id="condition" class="text-gray-600 mb-2"></p>
+    <p id="humidity" class="text-sm text-gray-500"></p>
+  </div>
+
+  <script>
+    // Normalisiert Akzente: 'Gränichen' → 'Granichen'
+    function normalizeCity(city) {
+      return city.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
+    // === Dein API-KEY:
+    const API_KEY = '0509bfd4ad7642e8a6072248252706';
+
+    // Element-Refs
+    const cityInput = document.getElementById('cityInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const card      = document.getElementById('weatherCard');
+    const locEl     = document.getElementById('location');
+    const iconEl    = document.getElementById('icon');
+    const tempEl    = document.getElementById('temp');
+    const condEl    = document.getElementById('condition');
+    const humidEl   = document.getElementById('humidity');
+
+    // API-Aufruf
+    async function fetchWeather(city) {
+      const res = await fetch(
+        `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${encodeURIComponent(city)}&aqi=no`
+      );
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error?.message || 'City not found');
+      }
+      return res.json();
+    }
+
+    // Suchfunktion
+    async function onSearch() {
+      let city = cityInput.value.trim();
+      if (!city) return;
+      city = normalizeCity(city);
+
+      try {
+        const data = await fetchWeather(city);
+        locEl.textContent   = `${data.location.name}, ${data.location.country}`;
+        iconEl.src          = data.current.condition.icon;
+        iconEl.alt          = data.current.condition.text;
+        tempEl.textContent  = `${data.current.temp_c}°C`;
+        condEl.textContent  = data.current.condition.text;
+        humidEl.textContent = `Luftfeuchtigkeit: ${data.current.humidity}%`;
+        card.classList.remove('hidden');
+      } catch (err) {
+        console.error(err);
+        alert('Wetterdaten konnten nicht geladen werden.');
+      }
+      cityInput.value = '';
+    }
+
+    // Events
+    searchBtn.addEventListener('click', onSearch);
+    cityInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') onSearch();
+    });
+  </script>
+</body>
+</html>
